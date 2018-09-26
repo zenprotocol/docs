@@ -3,7 +3,7 @@
 Contents:
 
 * [Installation](installation.html)
-  ** [Installers](installation/installers.html)
-  ** npm
-  ** From source
+    * [Installers](installation/installers.html)
+    * npm
+    * From source
 * [ZF*](zfstar.html)

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 
 import sys
 import os
@@ -22,6 +22,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Zen Protocol Documentation'
+copyright = u'Zen Protocol Ltd'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

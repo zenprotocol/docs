@@ -7,6 +7,6 @@ Contents:
         * [Installation](root/wallet/desktop/installation.html)
             * [Executable Installers](root/wallet/desktop/installation/installers.html)
             * [npm](root/wallet/desktop/installation/npm.html)
-            * From source
+            * [From source](root/wallet/desktop/installation/from-source.html)
     * [Web Wallet (Beta)](root/wallet/web-wallet.html)
 * [ZF*](root/zfstar.html)

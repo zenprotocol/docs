@@ -13,7 +13,7 @@ Video Tutorials
 ## OSX
 
 1. Install [mono-devel](http://www.mono-project.com/download). If you choose to install via a package manager, add Mono's own repository first.
-2. Install brew (https://www.howtogeek.com/211541/homebrew-for-os-x-easily-installs-desktop-apps-and-terminal-utilities)
+2. Install brew (<https://www.howtogeek.com/211541/homebrew-for-os-x-easily-installs-desktop-apps-and-terminal-utilities>)
     1. ```xcode-select --install```
     2. ```ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"```
     3. Run this to check if brew is installed properly: ```brew doctor```

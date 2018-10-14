@@ -14,14 +14,14 @@ Video Tutorials
 
 1. Install [mono-devel](http://www.mono-project.com/download). If you choose to install via a package manager, add Mono's own repository first.
 2. Install brew (https://www.howtogeek.com/211541/homebrew-for-os-x-easily-installs-desktop-apps-and-terminal-utilities)
-    a. ```xcode-select --install```
-    b. ```ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"```
-    c. Run this to check if brew is installed properly: ```brew doctor```
+    1. ```xcode-select --install```
+    2. ```ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"```
+    3. Run this to check if brew is installed properly: ```brew doctor```
 3. Open the **Terminal** (can be found from **search** bar)
 4. Install lmdb. Enter the command (in terminal) ```brew install lmdb```.
 5. [​Install Nodejs](https://nodejs.org/en/download/) (Version >= 6)
-    a. Recommended to install using [NVM​](https://github.com/creationix/nvm#installation)
-    b. Recommended to install Node LTS (8.9.4) ```nvm install 8.9.4```
+    1. Recommended to install using [NVM​](https://github.com/creationix/nvm#installation)
+    2. Recommended to install Node LTS (8.9.4) ```nvm install 8.9.4```
 
 
 ## Windows
@@ -37,8 +37,8 @@ Video Tutorials
 2. Install lmdb. The package name is liblmdb0 on Ubuntu and lmdb on Fedora.
     ```sudo apt install liblmdb0```
 3. Install Nodejs (Version >= 6)
-    a. Recommended to install using [NVM​](https://github.com/creationix/nvm#installation)
-    b. Recommended to install Node LTS (8.9.4) ```nvm install 8.9.4```
+    1. Recommended to install using [NVM​](https://github.com/creationix/nvm#installation)
+    2. Recommended to install Node LTS (8.9.4) ```nvm install 8.9.4```
 
 
 ## Point your npm directory to our repository

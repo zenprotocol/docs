@@ -2,11 +2,11 @@
 
 Contents:
 
-* [Wallet](top/wallet.html)
-    * [Desktop Wallet](wallet/desktop-wallet.html)
-        * [Installation](wallet/desktop/installation.html)
-            * [Executable Installers](wallet/desktop/installation/installers.html)
-            * [npm](wallet/desktop/installation/npm.html)
+* [Wallet](root/wallet.html)
+    * [Desktop Wallet](root/wallet/desktop-wallet.html)
+        * [Installation](root/wallet/desktop/installation.html)
+            * [Executable Installers](root/wallet/desktop/installation/installers.html)
+            * [npm](root/wallet/desktop/installation/npm.html)
             * From source
-    * [Web Wallet (Beta)](wallet/web-wallet.html)
-* [ZF*](zfstar.html)
+    * [Web Wallet (Beta)](root/wallet/web-wallet.html)
+* [ZF*](root/zfstar.html)

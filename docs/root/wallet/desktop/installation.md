@@ -8,7 +8,7 @@ There are three ways to install the Zen Protocol desktop wallet:
 [Installers](installation/installers.html)
 
 ### To use command-line tools: via npm
-Install from npm
+[Install from npm](installation/npm.html)
 
 ### From source
 Build from Source

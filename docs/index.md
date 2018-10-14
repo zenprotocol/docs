@@ -2,8 +2,9 @@
 
 Contents:
 
-* [Installation](installation.html)
-    * [Installers](installation/installers.html)
-    * npm
-    * From source
+* [Wallet]
+    * [Installation](wallet/installation.html)
+        * [Executable Installers](wallet/installation/installers.html)
+        * npm
+        * From source
 * [ZF*](zfstar.html)

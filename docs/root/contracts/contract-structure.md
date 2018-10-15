@@ -31,14 +31,14 @@ where ```n``` must be an expression which evaluates to a natural number (```nat`
     Details about the function.
 
 - ```command : string```
-    String that the contract may use.
-    Contains a command which tells the contract what to do.
-    For example:
-    ```F*
-    match command with
-    | "redeem" -> redeem txSkeleton contractId returnAddress wallet
-    | "buy"    -> buy txSkeleton contractId returnAddress
-    ```
+    - String that the contract may use.
+    - Contains a command which tells the contract what to do.
+    - For example:
+        ```F*
+        match command with
+        | "redeem" -> redeem txSkeleton contractId returnAddress wallet
+        | "buy"    -> buy txSkeleton contractId returnAddress
+        ```
 
 - ```sender : Zen.Types.sender```
     Details about the function.

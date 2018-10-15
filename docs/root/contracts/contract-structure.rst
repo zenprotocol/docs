@@ -4,14 +4,14 @@ Contract Structure
 
 .. highlight:: rst
 
-.. role:: fstar(code)
+.. role:: fsharp(code)
     :language: fsharp
 
-Each contract must contain 2 functions: :fstar:`main` and :fstar:`cf`.
+Each contract must contain 2 functions: :fsharp:`main` and :fsharp:`cf`.
 
-The structure of the :fstar:`main` function is:
+The structure of the :fsharp:`main` function is:
 
-.. codeblock:: fstar
+.. code-block:: fsharp
 
     main
         ( txSkel      : Zen.Types.txSkeleton  )

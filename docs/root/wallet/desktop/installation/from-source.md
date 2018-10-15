@@ -1,10 +1,10 @@
 # Build from Source
 
-If you would like to build Zen Protocol from source you can clone https://github.com/zenprotocol/zenprotocol and build it independently
+If you would like to build Zen Protocol from source you can clone <https://github.com/zenprotocol/zenprotocol> and build it independently
 
 ### Linux
 
-1. Install mono-devel from http://www.mono-project.com/download. If you choose to install via a package manager, add Mono's own repository first.
+1. Install mono-devel from <http://www.mono-project.com/download>. If you choose to install via a package manager, add Mono's own repository first.
 2. Install lmdb. The package name is liblmdb0 on Ubuntu and lmdb on Fedora.
 3. Run the following:
 ```

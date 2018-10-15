@@ -4,7 +4,8 @@ Preparing your machine to install the Zen Protocol desktop wallet and the Zen Fu
 
 --------------------------------------------------------------------------------
 
-Please note that the usage of the software is only permitted to anyone who purchased a license during the license sale period. [Sale Terms​](https://www.zenprotocol.com/legal/zen_protocol_token_sale_agreement.pdf)
+Please note that the usage of the software is only permitted to anyone who purchased a license during the license sale period.
+[Sale Terms​](https://www.zenprotocol.com/legal/zen_protocol_token_sale_agreement.pdf)
 
 ## Learn how to install and use the wallet with video tutorials:
 Video Tutorials

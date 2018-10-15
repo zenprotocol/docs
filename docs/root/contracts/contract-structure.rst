@@ -9,6 +9,8 @@ Contract Structure
 
 Each contract must contain 2 functions: :fsharp:`main` and :fsharp:`cf`.
 
+The :fsharp:`main` function is run whenever a contract is used within a transaction.
+
 The structure of the :fsharp:`main` function is:
 
 .. code-block:: fsharp
@@ -30,13 +32,13 @@ Parameters
 ----------
 
 * :fsharp:`txSkel : Zen.Types.txSkeleton`
-    Details about the function.
+    The transaction which used the contract.
 
 * :fsharp:`context : Zen.Types.context`
-    Details about the function.
+    **TODO: Details about the function.**
 
 * :fsharp:`contractId : Zen.Types.contractId`
-    Details about the function.
+    **TODO: Details about the function.**
 
 * :fsharp:`command : string`
     String that the contract may use.
@@ -50,13 +52,46 @@ Parameters
 
 
 * :fsharp:`sender : Zen.Types.sender`
-    Details about the function.
+    **TODO: Details about the function.**
 
 * :fsharp:`messageBody : option Zen.Types.data`
-    Details about the function.
+    The transaction may carry a message which can be any of the following things:
+
+    .. list-table::
+       :header-rows: 0
+
+       * -
+         -
+       * - :fsharp:`Byte of FStar.UInt8.t`
+         - 8 bit unsigned integer
+       * - :fsharp:`U32 of FStar.UInt32.t`
+         - 32 bit unsigned integer
+       * - :fsharp:`U64 of FStar.UInt64.t`
+         - 64 bit unsigned integer
+       * - :fsharp:`I64 of FStar.Int64.t`
+         - 64 bit signed integer
+       * - :fsharp:`ByteArray: Zen.Array.t FStar.UInt8.t -> data`
+         - Byte array
+       * - :fsharp:`String of string`
+         - String
+       * - :fsharp:`Hash of hash`
+         - 256-bit hash value
+       * - :fsharp:`Lock of lock`
+         - Lock
+       * - :fsharp:`Signature of signature`
+         - Signature
+       * - :fsharp:`PublicKey of publicKey`
+         - Public key
+       * - :fsharp:`Collection of dataCollection`
+         - Data collection
+
 
 * :fsharp:`wallet : Zen.Types.wallet`
-    Details about the function.
+    **TODO: Details about the function.**
 
 * :fsharp:`state : option Zen.Types.data`
-    Details about the function.
+    **TODO: Details about the function.**
+
+Output
+------
+The output of the contract is a new transaction.

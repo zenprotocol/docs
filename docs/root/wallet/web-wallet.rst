@@ -32,7 +32,7 @@ Differences between the Web Wallet and the `Desktop Wallet`_:
      - The client runs a full node and validates the consensus rules of the blockchain independently
    * - **Access**
      - Is via a web browser, which can be compromised in multiple ways such as:
-        * having a malicious Chrome Extension​
+        * Having a malicious Chrome Extension​
         * If the server that is serving the client gets hacked, the hacker could deliver a version of the website that steals your seed
         * Phishing - someone could create a website with a domain that looks very similar to the real official wallet domain and serve a malicious version of the wallet
      - You download a desktop application to your computer once from a trusted source

@@ -11,6 +11,8 @@ Each contract must contain 2 functions: :fsharp:`main` and :fsharp:`cf`.
 
 The :fsharp:`main` function is run whenever a contract is used within a transaction.
 
+The function will run both at the validation and at the generation of the transaction.
+
 The structure of the :fsharp:`main` function is:
 
 .. code-block:: fsharp
@@ -35,10 +37,11 @@ Parameters
     The transaction which used the contract.
 
 * :fsharp:`context : Zen.Types.context`
-    **TODO: Details about the function.**
+    The blockchain context of the transaction, given by :fsharp:`blockNumber` (unsigned 32 bit integer), and :fsharp:`timestamp` - which is the UNIX Epoch time (unsigned 64 bit integer) of the block creation.
 
 * :fsharp:`contractId : Zen.Types.contractId`
-    **TODO: Details about the function.**
+    The contract identifier.
+    :fsharp:`(version, hash)`
 
 * :fsharp:`command : string`
     String that the contract may use.
@@ -52,46 +55,83 @@ Parameters
 
 
 * :fsharp:`sender : Zen.Types.sender`
-    **TODO: Details about the function.**
-
-* :fsharp:`messageBody : option Zen.Types.data`
-    The transaction may carry a message which can be any of the following things:
+    The sender identity.
+    Can be any of the following:
 
     .. list-table::
        :header-rows: 0
 
-       * -
-         -
-       * - :fsharp:`Byte of FStar.UInt8.t`
-         - 8 bit unsigned integer
-       * - :fsharp:`U32 of FStar.UInt32.t`
-         - 32 bit unsigned integer
-       * - :fsharp:`U64 of FStar.UInt64.t`
-         - 64 bit unsigned integer
-       * - :fsharp:`I64 of FStar.Int64.t`
-         - 64 bit signed integer
-       * - :fsharp:`ByteArray: Zen.Array.t FStar.UInt8.t -> data`
-         - Byte array
-       * - :fsharp:`String of string`
-         - String
-       * - :fsharp:`Hash of hash`
-         - 256-bit hash value
-       * - :fsharp:`Lock of lock`
-         - Lock
-       * - :fsharp:`Signature of signature`
-         - Signature
-       * - :fsharp:`PublicKey of publicKey`
+       * - :fsharp:`Contract`
+         - :fsharp:`of contractId`
+         - A contract, given by its ID
+       * - :fsharp:`PK`
+         - :fsharp:`of publicKey`
          - Public key
-       * - :fsharp:`Collection of dataCollection`
+       * - :fsharp:`Anonymous`
+         -
+         - An anonymous sender
+
+* :fsharp:`messageBody : option Zen.Types.data`
+    The transaction may carry a message which can be any of the following:
+
+    .. list-table::
+       :header-rows: 0
+
+       * - :fsharp:`Byte`
+         - :fsharp:`of FStar.UInt8.t`
+         - 8 bit unsigned integer
+       * - :fsharp:`U32`
+         - :fsharp:`of FStar.UInt32.t`
+         - 32 bit unsigned integer
+       * - :fsharp:`U64`
+         - :fsharp:`of FStar.UInt64.t`
+         - 64 bit unsigned integer
+       * - :fsharp:`I64`
+         - :fsharp:`of FStar.Int64.t`
+         - 64 bit signed integer
+       * - :fsharp:`ByteArray`
+         - :fsharp:`of Zen.Array.t FStar.UInt8.t`
+         - Byte array
+       * - :fsharp:`String`
+         - :fsharp:`of string`
+         - String
+       * - :fsharp:`Hash`
+         - :fsharp:`of Zen.Types.hash`
+         - 256-bit hash value
+       * - :fsharp:`Lock`
+         - :fsharp:`of Zen.Types.lock`
+         - Lock
+       * - :fsharp:`Signature`
+         - :fsharp:`of Zen.Types.signature`
+         - Signature
+       * - :fsharp:`PublicKey`
+         - :fsharp:`of Zen.Types.publicKey`
+         - Public key
+       * - :fsharp:`Collection`
+         - :fsharp:`of Zen.Types.dataCollection`
          - Data collection
 
 
 * :fsharp:`wallet : Zen.Types.wallet`
-    **TODO: Details about the function.**
+    Contains all the transaction inputs that were previously locked to the contract.
+    In order for a contract to spend its own funds they need to come from contract wallet.
 
 * :fsharp:`state : option Zen.Types.data`
-    **TODO: Details about the function.**
+    The contract previous state.
 
 Output
 ------
-The output of the contract is a new transaction.
+The output of the contract is of the record type :fsharp:`contractReturn` which has 3 fields:
+
+.. list-table::
+   :header-rows: 0
+
+   * - :fsharp:`state`
+     - :fsharp:`: stateUpdate`
+     - The updated state of the contract
+   * - :fsharp:`tx`
+     - :fsharp:`: txSkeleton`
+     - The genrated transaction
+   * - :fsharp:`message`
+     - :fsharp:`: option message`
+     - An optional message for invoking another contract

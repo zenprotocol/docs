@@ -62,10 +62,10 @@ Parameters
        :header-rows: 0
 
        * - :fsharp:`Contract`
-         - :fsharp:`of contractId`
+         - :fsharp:`of Zen.Types.contractId`
          - A contract, given by its ID
        * - :fsharp:`PK`
-         - :fsharp:`of publicKey`
+         - :fsharp:`of Zen.Types.publicKey`
          - Public key
        * - :fsharp:`Anonymous`
          -
@@ -117,21 +117,44 @@ Parameters
     In order for a contract to spend its own funds they need to come from contract wallet.
 
 * :fsharp:`state : option Zen.Types.data`
-    The contract previous state.
+    The contract current state.
+    Can be either :fsharp:`Some` data (as the message body) or :fsharp:`None`.
 
 Output
 ------
-The output of the contract is of the record type :fsharp:`contractReturn` which has 3 fields:
+The output of the contract is of the record type :fsharp:`Zen.Types.contractReturn` which has 3 fields:
 
-.. list-table::
-   :header-rows: 0
 
-   * - :fsharp:`state`
-     - :fsharp:`: stateUpdate`
-     - The updated state of the contract
-   * - :fsharp:`tx`
-     - :fsharp:`: txSkeleton`
-     - The genrated transaction
-   * - :fsharp:`message`
-     - :fsharp:`: option message`
-     - An optional message for invoking another contract
+* :fsharp:`state : Zen.Types.stateUpdate`
+  State update.
+  Can be any of the following:
+
+  .. list-table::
+    :header-rows: 0
+
+    * - :fsharp:`Delete`
+      -
+      - Delete the current state, resetting it to :fsharp:`None`
+    * - :fsharp:`NoChange`
+      -
+      - Keeping the current state as it is, with no change.
+    * - :fsharp:`Update`
+      - :fsharp:`of Zen.Types.data`
+      - Change the state to be the new given :fsharp:`data`.
+
+* :fsharp:`tx : Zen.Types.txSkeleton`
+  The genrated transaction.
+
+* :fsharp:`message : option Zen.Types.message`
+  An optional message for invoking another contract.
+  This is a record type which has 3 fields:
+
+  .. list-table::
+    :header-rows: 0
+
+    * - :fsharp:`recipient: Zen.Types.contractId`
+      - The recipient contract.
+    * - :fsharp:`command: string`
+      - The command given to the recipient contract.
+    * - :fsharp:`body: option Zen.Types.data`
+      - The message body of given to the recipient contract.

@@ -47,11 +47,12 @@ Parameters
     String that the contract may use.
     Contains a command which tells the contract what to do.
     For example:
-      .. code-block:: fsharp
 
-        match command with
-        | "redeem" -> redeem txSkeleton contractId returnAddress wallet
-        | "buy"    -> buy txSkeleton contractId returnAddress
+    .. code-block:: fsharp
+
+       match command with
+       | "redeem" -> redeem txSkeleton contractId returnAddress wallet
+       | "buy"    -> buy txSkeleton contractId returnAddress
 
 
 * :fsharp:`sender : Zen.Types.sender`

@@ -10,4 +10,4 @@ Contents:
             * [From source](root/wallet/desktop/installation/from-source.html)
     * [Web Wallet (Beta)](root/wallet/web-wallet.html)
 * [ZF*](root/zfstar.html)
-* [Contracts](root/contracts/contract-structure.html)
+* [Contracts](root/contracts.html)

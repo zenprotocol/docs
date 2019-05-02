@@ -34,7 +34,7 @@ Parameters
 ----------
 
 * :fsharp:`txSkel : Zen.Types.txSkeleton`
-    The transaction which used the contract.
+    The partial transaction supplied as input to the contract.
 
 * :fsharp:`context : Zen.Types.context`
     The blockchain context of the transaction, given by :fsharp:`blockNumber` (unsigned 32 bit integer), and :fsharp:`timestamp` - which is the UNIX Epoch time (unsigned 64 bit integer) of the block creation.
@@ -143,7 +143,7 @@ The output of the contract is of the record type :fsharp:`Zen.Types.contractRetu
       - Change the state to be the new given :fsharp:`data`.
 
 * :fsharp:`tx : Zen.Types.txSkeleton`
-  The genrated transaction.
+  The generated transaction structure.
 
 * :fsharp:`message : option Zen.Types.message`
   An optional message for invoking another contract.

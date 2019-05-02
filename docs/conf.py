@@ -9,7 +9,7 @@ import os
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [ 'sphinxcontrib.inlinesyntaxhighlight' ]
+extensions = [ 'sphinxcontrib.inlinesyntaxhighlight', 'sphinx.ext.mathjax' ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -73,7 +73,7 @@ html_theme = 'default'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-#html_style = 'css/my_theme.css' 
+#html_style = 'css/my_theme.css'
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied

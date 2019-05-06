@@ -50,10 +50,29 @@ We use the notation :math:`c\left(M\right)` for the cost of the term :fsharp:`M`
      - :math:`c\left(\color{black}{ M.F }\right)`
      - :math:`1 + c\left(\color{black}{M}\right)`
 
+In practice the actual cost (relative to the cost model) is **not computed directly**,
+instead - the cost is divided into 2 components:
+
+  1. **Compositional Cost** - which is **declared** by the **developer** and
+     **verified** by the **type system**
+  2. **Syntactic Cost** - which is **computed** by the **elaborator**
+
+In fact - given general recursion it is **impossible** to automatically compute the cost
+of any arbitrary term in the language.
+
+Another deviation from the cost model is that the cost we give in practice is
+an **upper bound** on the cost given by the cost model, because it is easier to compute,
+but since the cost model itself is an upper bound on the number of steps the approximation
+we use in practice still gives a valid upper bound.
+
+The **syntactic cost** is given to terms **by virtue of their form**, and acts as a **seed** which
+the **compositional cost** later **propogates** into the program through the **type system**.
+
+
 The :fsharp:`cost` Type
 -----------------------
 
-Given a cost model we can define a special type constructor :fsharp:`cost` to indicate that
+Given a cost model we define a special type constructor :fsharp:`cost` to indicate that
 a term of type :fsharp:`cost m A`, where :fsharp:`m` is a natural number and :fsharp:`A` is a
 type, would take at most :fsharp:`m` steps to produce a **value** of type :fsharp:`A`.
 
@@ -68,7 +87,11 @@ When a **function** :fsharp:`f` has the type :fsharp:`A -> cost m B` we say that
 given an input of type :fsharp:`A` it takes :fsharp:`f` at most :fsharp:`m` steps to produce
 an output of type :fsharp:`B`.
 
-The :fsharp:`cost` type constructor should behave as a an **indexed monad**, indexed over the
+
+Compositional Cost
+------------------
+
+The :fsharp:`cost` type constructor behaves as a an **indexed monad**, indexed over the
 additive monoid of the natural numbers, so whenever you compose (using Kleisli composition)
 2 costed functions :fsharp:`f : B -> cost n C` and :fsharp:`g : A -> cost m B`
 you get a function of type :fsharp:`A -> cost (m + n) C` where the cost is the sum of the costs
@@ -86,12 +109,29 @@ To enforce the validity of the costs we combine the compiler with an **elaborato
 which would be explained in detail later on.
 
 To lift a term into the monad we use the :fsharp:`ret` function, which is the unit of the
-monad and has the type :fsharp:`ret : 'a -> cost 0 'a`.
+monad and has the type :fsharp:`ret : a -> cost 0 a`.
 Since the :fsharp:`ret` function gives a term a cost of :fsharp:`0`, we use the function
-:fsharp:`inc : (m:nat) -> cost n 'a -> cost (n+m) 'a` to increase the declared cost of a term.
+:fsharp:`inc : (m:nat) -> cost n a -> cost (n+m) a` to increase the declared cost of a term.
 
 Syntactic Cost
 --------------
+
+The cost monad can only ensure that costs are composed correctly, but it cannot
+enforce the declared costs to conform to the cost model - it completely trusts
+the developer to declare costs honestly.
+
+In order to actually **enforce** the cost model, we use a device called *the elaborator*.
+
+The elaborator scans the syntax trees of the terms and recursively sums up the cost of
+each branch, adding additional constant cost with each clause and primitive operation.
+
+Eventually, when the elaborator reaches either a **lambda expression**,
+or a **let expression** - it embeds the accumulated cost of the body of the expression
+into the body, by replacing it with an application of the :fsharp:`inc` function, along
+with the accumulated cost, on the body; this ensures 2 things:
+
+    1. That the term returns an output which is wrapped in the :fsharp:`cost` monad.
+    2. That all the syntactic cost is accounted for.
 
 .. list-table::
    :header-rows: 1
@@ -129,9 +169,6 @@ Syntactic Cost
    * - Record Projection
      - :math:`\color{red}{s\left(\color{black}{ M.F }\right)}`
      - :math:`\color{red}{1 + s\left(\color{black}{M}\right)}`
-
-Elaboration
------------
 
 .. list-table::
    :header-rows: 1

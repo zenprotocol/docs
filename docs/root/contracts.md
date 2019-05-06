@@ -1,8 +1,8 @@
 # Contracts
 
-## Cost Model
+## Cost Analysis
 
-[Cost Model](contracts/cost.html)
+[Cost Analysis](contracts/cost.html)
 
 ## Contract Structure
 

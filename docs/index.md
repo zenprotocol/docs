@@ -11,3 +11,5 @@ Contents:
     * [Web Wallet (Beta)](root/wallet/web-wallet.html)
 * [ZF*](root/zfstar.html)
 * [Contracts](root/contracts.html)
+    * [Cost Analysis](root/contracts/cost.html)
+    * [Contract Structure](root/contracts/contract-structure.html)

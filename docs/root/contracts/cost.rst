@@ -226,19 +226,19 @@ with the accumulated cost, on the body; this ensures 2 things:
 Examples
 --------
 
-Let's create a simple function which takes an argument and a function and applies the function on the argument:
+Let's create a simple function which takes a function and an argument and applies the function on the argument:
 
 .. code-block:: fsharp
 
-    val myfunc1 (#a #b:Type): a -> (a -> b) -> b
-    let myfunc1 #_ #_ x f = f x
+    val applyOnce (#a #b:Type): (a -> b) -> a -> b
+    let applyOnce #_ #_ f x = f x
 
 Elaborating the function will yield the following:
 
 .. code-block:: fsharp
 
-    val myfunc1: #a: Type -> #b: Type -> a -> (a -> b) -> b
-    let myfunc1 #_ #_ x f = inc 1 (f x)
+    val applyOnce: #a: Type -> #b: Type -> (a -> b) -> a -> b
+    let applyOnce #_ #_ f x = inc 1 (f x)
 
 That's because function application (:fsharp:`f x`) has a cost of 1, which is embedded into the let-expression with :fsharp:`inc`.
 
@@ -249,15 +249,15 @@ To fix it we modify the function to use :fsharp:`ret` on the result, and we chan
 
 .. code-block:: fsharp
 
-    val myfunc1 (#a #b:Type): a -> (a -> b) -> b `cost` 0
-    let myfunc1 #_ #_ x f = ret (f x)
+    val applyOnce (#a #b:Type): (a -> b) -> a -> b `cost` 0
+    let applyOnce #_ #_ f x = ret (f x)
 
 Now elaborating the function will yield the following:
 
 .. code-block:: fsharp
 
-    val myfunc1 (#a #b:Type): a -> (a -> b) -> b `cost` 0
-    let myfunc1 #_ #_ x f = inc 2 (ret (f x))
+    val applyOnce (#a #b:Type): (a -> b) -> a -> b `cost` 0
+    let applyOnce #_ #_ f x = inc 2 (ret (f x))
 
 That's because now we have **2 applications**, one of :fsharp:`f` on :fsharp:`x`, and the other of :fsharp:`ret` on the result.
 
@@ -273,7 +273,90 @@ To fix that we now have to declare the **correct** cost within the type, to acco
 
 .. code-block:: fsharp
 
-    val myfunc1 (#a #b:Type): a -> (a -> b) -> b `cost` 2
-    let myfunc1 #_ #_ x f = inc 2 (ret (f x))
+    val applyOnce (#a #b:Type): (a -> b) -> a -> b `cost` 2
+    let applyOnce #_ #_ f x = inc 2 (ret (f x))
 
 Now that the syntactic cost is accounted for the program will compile.
+
+------
+
+The following function takes a function :fsharp:`f` and an argument :fsharp:`x` and applies :fsharp:`f` on :fsharp:`x` and then on the result:
+
+.. code-block:: fsharp
+
+    val applyTwice (#a:Type): (a -> a) -> a -> a
+    let applyTwice #_ f x = f (f x)
+
+Elaborating this function will yield the following:
+
+.. code-block:: fsharp
+
+    val applyTwice (#a:Type): (a -> a) -> a -> a
+    let applyTwice #_ f x = inc 2 (f (f x))
+
+The increment by 2 is due to the fact there are 2 applications.
+
+Again - this format won't do, and to be able to compile the elaborated program we have to lift the result into the cost monad and account for the
+additional costs:
+
+.. code-block:: fsharp
+
+    val applyTwice (#a:Type): (a -> a) -> a -> a `cost` 3
+    let applyTwice #_ f x = ret (f (f x))
+
+which will be elaborated as:
+
+.. code-block:: fsharp
+
+    val applyTwice: #a: Type -> (a -> a) -> a -> cost a 3
+    let applyTwice #_ f x = inc 3 (ret (f (f x)))
+
+Notice that this time we've participated the increased elaborated cost in advance, so the original code won't compile (since :fsharp:`ret` gives
+a cost of 0) while the elaborated code will (since it will add :fsharp:`inc 3` to account for the costs of all the function applications).
+
+You can declare the correct types either **before** or **after** the elaboration, since the elaboration process **leaves the types intact**, but
+in general it's preferred to correct the types **after** the elaboration, because then the original code would still compile and you won't have to
+predict the elaborated costs.
+
+-----
+
+Now let's create another function - which takes a boolean :fsharp:`b`, a function :fsharp:`f`, and another argument :fsharp:`x`,
+and applies :fsharp:`f` on :fsharp:`x` **once** if :fsharp:`b` is :fsharp:`true` or **twice** if :fsharp:`b` is :fsharp:`false`.
+
+We'll use the previously defined functions to do so:
+
+.. code-block:: fsharp
+
+    val onceOrTwice (#a:Type): bool -> (a -> a) -> a -> a `cost` ?
+    let onceOrTwice #_ b f x = if b then applyOnce f x else applyTwice f x
+
+What should be the declared cost of this function?
+
+:fsharp:`applyOnce` gives a cost of **2**, while :fsharp:`applyTwice` gives a cost of **3**, so we have a **collision of costs**.
+
+To reconcile the collision we manually insert :fsharp:`inc 1` to the :fsharp:`applyOnce f x` clasue to account for the difference between the costs,
+which would give both clauses of the :fsharp:`if-then-else` the cost of **3**:
+
+.. code-block:: fsharp
+
+    val onceOrTwice (#a:Type): bool -> (a -> a) -> a -> a `cost` 3
+    let onceOrTwice #_ b f x = if b then inc 1 (applyOnce f x) else applyTwice f x
+
+However - we still need to account for the syntactic cost of the :fsharp:`onceOrTwice` function itself - to do so we first elaborate the function,
+which gives us:
+
+.. code-block:: fsharp
+
+    val onceOrTwice (#a:Type): bool -> (a -> a) -> a -> a `cost` 3
+    let onceOrTwice #_ b f x = inc 7 (if b then inc 1 (applyOnce f x) else applyTwice f x)
+
+That is beacuse the :fsharp:`then` clause has **4 applications**, while the :fsharp:`else` clause has **3**, and since the syntactic cost of
+an :fsharp:`if-then-else` is defined as **3** + the maximal syntactic cost out of both clauses, which is **4** in this case, we get a total syntactic cost
+of **7**, which is embedded with an :fsharp:`inc 7` into the let-expression.
+
+Now to account for the additional cost of **7** we change the declared cost of the function:
+
+.. code-block:: fsharp
+
+    val onceOrTwice (#a:Type): bool -> (a -> a) -> a -> a `cost` 10
+    let onceOrTwice #_ b f x = inc 7 (if b then inc 1 (applyOnce f x) else applyTwice f x)

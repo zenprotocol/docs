@@ -82,16 +82,16 @@ The Cost Type
 -------------
 
 Given a cost model we define a special type constructor :fsharp:`cost` to indicate that
-a term of type :fsharp:`cost m A`, where :fsharp:`m` is a natural number and :fsharp:`A` is a
-type, would take at most :fsharp:`m` steps to produce a **value** of type :fsharp:`A`.
+a term of type :fsharp:`cost A m`, where :fsharp:`A` is a type and :fsharp:`m` is a natural number,
+would take at most :fsharp:`m` steps to produce a **value** of type :fsharp:`A`.
 
-Dually - we use the type :fsharp:`cost m A` to indicate that a term of this type **represents
+Dually - we use the type :fsharp:`cost A m` to indicate that a term of this type **represents
 a value** of type :fsharp:`A` which **has taken** at most :fsharp:`m` steps to evaluate.
 
-When a **term** :fsharp:`M` has the type :fsharp:`cost m A` we say that :fsharp:`M` is a
+When a **term** :fsharp:`M` has the type :fsharp:`cost A m` we say that :fsharp:`M` is a
 *costed term*, with a *cost* of :fsharp:`m`.
 
-When a **function** :fsharp:`f` has the type :fsharp:`A -> cost m B` we say that
+When a **function** :fsharp:`f` has the type :fsharp:`A -> cost B m` we say that
 :fsharp:`f` is a *costed function*, with a *cost* of :fsharp:`m`, which means that when
 given an input of type :fsharp:`A` it takes :fsharp:`f` at most :fsharp:`m` steps to produce
 an output of type :fsharp:`B`.
@@ -102,8 +102,8 @@ Compositional Cost
 
 The :fsharp:`cost` type constructor behaves as a an **indexed monad**, indexed over the
 additive monoid of the natural numbers, so whenever you compose (using Kleisli composition)
-2 costed functions :fsharp:`f : B -> cost n C` and :fsharp:`g : A -> cost m B`
-you get a function of type :fsharp:`A -> cost (m + n) C` where the cost is the sum of the costs
+2 costed functions :fsharp:`f : B -> cost C n` and :fsharp:`g : A -> cost B m`
+you get a function of type :fsharp:`A -> cost C (m + n)` where the cost is the sum of the costs
 of :fsharp:`f` and :fsharp:`g`.
 
 In practice - the :fsharp:`cost` monad in *ZF\** is implemented as **the identity monad**,
@@ -118,9 +118,9 @@ To enforce the validity of the costs we combine the compiler with an **elaborato
 which would be explained in detail later on.
 
 To lift a term into the monad we use the :fsharp:`ret` function, which is the unit of the
-monad and has the type :fsharp:`ret : a -> cost 0 a`.
+monad and has the type :fsharp:`ret : a -> cost a 0`.
 Since the :fsharp:`ret` function gives a term a cost of :fsharp:`0`, we use the function
-:fsharp:`inc : (m:nat) -> cost n a -> cost (n+m) a` to increase the declared cost of a term.
+:fsharp:`inc : (m:nat) -> cost a n -> cost a (n+m)` to increase the declared cost of a term.
 
 Syntactic Cost
 --------------
@@ -249,14 +249,14 @@ To fix it we modify the function to use :fsharp:`ret` on the result, and we chan
 
 .. code-block:: fsharp
 
-    val applyOnce (#a #b:Type): (a -> b) -> a -> b `cost` 0
+    val applyOnce (#a #b:Type): (a -> b) -> a -> cost b 0
     let applyOnce #_ #_ f x = ret (f x)
 
 Now elaborating the function will yield the following:
 
 .. code-block:: fsharp
 
-    val applyOnce (#a #b:Type): (a -> b) -> a -> b `cost` 0
+    val applyOnce (#a #b:Type): (a -> b) -> a -> cost b 0
     let applyOnce #_ #_ f x = inc 2 (ret (f x))
 
 That's because now we have **2 applications**, one of :fsharp:`f` on :fsharp:`x`, and the other of :fsharp:`ret` on the result.
@@ -273,7 +273,7 @@ To fix that we now have to declare the **correct** cost within the type, to acco
 
 .. code-block:: fsharp
 
-    val applyOnce (#a #b:Type): (a -> b) -> a -> b `cost` 2
+    val applyOnce (#a #b:Type): (a -> b) -> a -> cost b 2
     let applyOnce #_ #_ f x = inc 2 (ret (f x))
 
 Now that the syntactic cost is accounted for the program will compile.
@@ -301,7 +301,7 @@ additional costs:
 
 .. code-block:: fsharp
 
-    val applyTwice (#a:Type): (a -> a) -> a -> a `cost` 3
+    val applyTwice (#a:Type): (a -> a) -> a -> cost a 3
     let applyTwice #_ f x = ret (f (f x))
 
 which will be elaborated as:
@@ -327,7 +327,7 @@ We'll use the previously defined functions to do so:
 
 .. code-block:: fsharp
 
-    val onceOrTwice (#a:Type): bool -> (a -> a) -> a -> a `cost` ?
+    val onceOrTwice (#a:Type): bool -> (a -> a) -> a -> cost a ?
     let onceOrTwice #_ b f x = if b then applyOnce f x else applyTwice f x
 
 What should be the declared cost of this function?
@@ -339,7 +339,7 @@ which would give both clauses of the :fsharp:`if-then-else` the cost of **3**:
 
 .. code-block:: fsharp
 
-    val onceOrTwice (#a:Type): bool -> (a -> a) -> a -> a `cost` 3
+    val onceOrTwice (#a:Type): bool -> (a -> a) -> a -> cost a 3
     let onceOrTwice #_ b f x = if b then inc 1 (applyOnce f x) else applyTwice f x
 
 However - we still need to account for the syntactic cost of the :fsharp:`onceOrTwice` function itself - to do so we first elaborate the function,
@@ -347,7 +347,7 @@ which gives us:
 
 .. code-block:: fsharp
 
-    val onceOrTwice (#a:Type): bool -> (a -> a) -> a -> a `cost` 3
+    val onceOrTwice (#a:Type): bool -> (a -> a) -> a -> cost a 3
     let onceOrTwice #_ b f x = inc 7 (if b then inc 1 (applyOnce f x) else applyTwice f x)
 
 That is beacuse the :fsharp:`then` clause has **4 applications**, while the :fsharp:`else` clause has **3**, and since the syntactic cost of
@@ -358,5 +358,5 @@ Now to account for the additional cost of **7** we change the declared cost of t
 
 .. code-block:: fsharp
 
-    val onceOrTwice (#a:Type): bool -> (a -> a) -> a -> a `cost` 10
+    val onceOrTwice (#a:Type): bool -> (a -> a) -> a -> cost a 10
     let onceOrTwice #_ b f x = inc 7 (if b then inc 1 (applyOnce f x) else applyTwice f x)

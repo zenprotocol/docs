@@ -37,6 +37,15 @@ We use the notation :math:`c\left(M\right)` for the cost of the term :fsharp:`M`
    * - Function Application
      - :math:`c\left(\color{black}{ M\:N }\right)`
      - :math:`1 + c\left(M\right) + c\left(N\right)`
+   * - Let Expression
+     - :math:`c\left(\begin{array}{cc}\textbf{let} & L_{k}\\\textbf{in} & M\end{array}\right)`
+     - :math:`c\left(M\right) + \sum_{k=1}^{n}c\left(L_{k}\right)`
+   * - Nullary Let Clause
+     - :math:`c\left(x = N\right)`
+     - :math:`c\left(N\right)`
+   * - Applied Let Clause
+     - :math:`c\left(f\:x_{1}\ldots x_{n}=N\right)`
+     - :math:`0`
    * - Conditional
      - :math:`c\left( \textbf{if}\:M\:\textbf{then}\:N_{1}\:\textbf{else}\:N_{2} \right)`
      - :math:`3+c\left(M\right)+\textbf{if}\:M\:\textbf{then}\:c\left(N_{1}\right)\:\textbf{else}\:c\left(N_{2}\right)`
@@ -69,8 +78,8 @@ The **syntactic cost** is given to terms **by virtue of their form**, and acts a
 the **compositional cost** later **propogates** into the program through the **type system**.
 
 
-The :fsharp:`cost` Type
------------------------
+The Cost Type
+-------------
 
 Given a cost model we define a special type constructor :fsharp:`cost` to indicate that
 a term of type :fsharp:`cost m A`, where :fsharp:`m` is a natural number and :fsharp:`A` is a
@@ -154,6 +163,15 @@ with the accumulated cost, on the body; this ensures 2 things:
    * - Function Abstraction
      - :math:`\color{red}{s\left(\color{black}{ \lambda x.M }\right)}`
      - :math:`\color{red}{0}`
+   * - Let Expression
+     - :math:`\color{red}{s\left(\color{black}{\begin{array}{cc}\textbf{let} & L_{k}\\\textbf{in} & M\end{array}}\right)}`
+     - :math:`\color{red}{s\left(\color{black}{M}\right)} + \color{red}{\sum_{k=1}^{n}s\left(\color{black}{L_{k}}\right)}`
+   * - Nullary Let Clause
+     - :math:`\color{red}{s\left(\color{black}{x = N}\right)}`
+     - :math:`\color{red}{s\left(\color{black}{N}\right)}`
+   * - Applied Let Clause
+     - :math:`\color{red}{s\left(\color{black}{f\:x_{1}\ldots x_{n}=N}\right)}`
+     - :math:`\color{red}{0}`
    * - Function Application
      - :math:`\color{red}{s\left(\color{black}{ M\:N }\right)}`
      - :math:`\color{red}{1 + s\left(\color{black}{M}\right) + s\left(\color{black}{N}\right)}`
@@ -182,6 +200,15 @@ with the accumulated cost, on the body; this ensures 2 things:
    * - Function Application
      - :math:`\color{blue}{\left[\color{black}{ M\:N }\right]}`
      - :math:`\color{blue}{\left[ \color{black}{M}\right]}\:\color{blue}{\left[ \color{black}{N}\right]}`
+   * - Let Expression
+     - :math:`\color{blue}{\left[\color{black}{\begin{array}{cc}\textbf{let} & L_{k}\\\textbf{in} & M\end{array}}\right]}`
+     - :math:`\begin{array}{cc}\textbf{let} & \color{blue}{\left[\color{black}{L_{k}}\right]}\\\textbf{in} & \color{blue}{\left[\color{black}{M}\right]}\end{array}`
+   * - Nullary Let Clause
+     - :math:`\color{blue}{\left[\color{black}{x = N}\right]}`
+     - :math:`x = \color{blue}{\left[\color{black}{N}\right]}`
+   * - Applied Let Clause
+     - :math:`\color{blue}{\left[\color{black}{f\:x_{1}\ldots x_{n}=N}\right]}`
+     - :math:`f\:x_{1}\ldots x_{n}=\textbf{inc}\:\underline{\color{red}{s\left(\color{black}{M}\right)}}\:\text{(}\color{blue}{\left[\color{black}{N}\right]}\:\text{)}`
    * - Conditional
      - :math:`\color{blue}{\left[\color{black}{ \textbf{if}\:M\:\textbf{then}\:N_{1}\:\textbf{else}\:N_{2} }\right]}`
      - :math:`\textbf{if}\:\color{blue}{\left[ \color{black}{M}\right]}\:\textbf{then}\:\color{blue}{\left[ \color{black}{N_{1}}\right]}\:\textbf{else}\:\color{blue}{\left[ \color{black}{N_{2}}\right]}`

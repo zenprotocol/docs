@@ -135,7 +135,7 @@ The elaborator scans the syntax trees of the terms and recursively sums up the c
 each branch, adding additional constant cost with each clause and primitive operation.
 
 Eventually, when the elaborator reaches either a **lambda expression**,
-or a **let expression** - it embeds the accumulated cost of the body of the expression
+or a **let expression** (which could be a **top-level let**) - it embeds the accumulated cost of the body of the expression
 into the body, by replacing it with an application of the :fsharp:`inc` function, along
 with the accumulated cost, on the body; this ensures 2 things:
 
@@ -208,7 +208,7 @@ with the accumulated cost, on the body; this ensures 2 things:
      - :math:`x = \color{blue}{\left[\color{black}{N}\right]}`
    * - Applied Let Clause
      - :math:`\color{blue}{\left[\color{black}{f\:x_{1}\ldots x_{n}=N}\right]}`
-     - :math:`f\:x_{1}\ldots x_{n}=\textbf{inc}\:\underline{\color{red}{s\left(\color{black}{M}\right)}}\:\text{(}\color{blue}{\left[\color{black}{N}\right]}\:\text{)}`
+     - :math:`f\:x_{1}\ldots x_{n}=\textbf{inc}\:\underline{\color{red}{s\left(\color{black}{N}\right)}}\:\text{(}\color{blue}{\left[\color{black}{N}\right]}\:\text{)}`
    * - Conditional
      - :math:`\color{blue}{\left[\color{black}{ \textbf{if}\:M\:\textbf{then}\:N_{1}\:\textbf{else}\:N_{2} }\right]}`
      - :math:`\textbf{if}\:\color{blue}{\left[ \color{black}{M}\right]}\:\textbf{then}\:\color{blue}{\left[ \color{black}{N_{1}}\right]}\:\textbf{else}\:\color{blue}{\left[ \color{black}{N_{2}}\right]}`
@@ -221,3 +221,59 @@ with the accumulated cost, on the body; this ensures 2 things:
    * - Record Projection
      - :math:`\color{blue}{\left[\color{black}{ M.F }\right]}`
      - :math:`\color{blue}{\left[ \color{black}{M}\right]}.F`
+
+
+Examples
+--------
+
+Let's create a simple function which takes an argument and a function and applies the function on the argument:
+
+.. code-block:: fsharp
+
+    val myfunc1 (#a #b:Type): a -> (a -> b) -> b
+    let myfunc1 #_ #_ x f = f x
+
+Elaborating the function will yield the following:
+
+.. code-block:: fsharp
+
+    val myfunc1: #a: Type -> #b: Type -> a -> (a -> b) -> b
+    let myfunc1 #_ #_ x f = inc 1 (f x)
+
+That's because function application (:fsharp:`f x`) has a cost of 1, which is embedded into the let-expression with :fsharp:`inc`.
+
+However - trying to compile this function will result in a typing error - because you can only apply :fsharp:`inc` on a value of a :fsharp:`cost` type.
+
+To fix it we modify the function to use :fsharp:`ret` on the result, and we change the type signature to return a :fsharp:`cost` type
+(with a cost of 0 since that is the cost :fsharp:`ret` gives):
+
+.. code-block:: fsharp
+
+    val myfunc1 (#a #b:Type): a -> (a -> b) -> b `cost` 0
+    let myfunc1 #_ #_ x f = ret (f x)
+
+Now elaborating the function will yield the following:
+
+.. code-block:: fsharp
+
+    val myfunc1 (#a #b:Type): a -> (a -> b) -> b `cost` 0
+    let myfunc1 #_ #_ x f = inc 2 (ret (f x))
+
+That's because now we have **2 applications**, one of :fsharp:`f` on :fsharp:`x`, and the other of :fsharp:`ret` on the result.
+
+Now the compilation would **still fail** with a typing error:
+
+.. code-block:: none
+
+    Subtyping check failed; expected type Zen.Cost.Realized.cost _ 0; got type Zen.Cost.Realized.cost _ (0 + 2)
+
+That's because while the declared cost is 0, the **inferred** cost (due to the addition of :fsharp:`inc 2`) is 2.
+
+To fix that we now have to declare the **correct** cost within the type, to account for the increment:
+
+.. code-block:: fsharp
+
+    val myfunc1 (#a #b:Type): a -> (a -> b) -> b `cost` 2
+    let myfunc1 #_ #_ x f = inc 2 (ret (f x))
+
+Now that the syntactic cost is accounted for the program will compile.

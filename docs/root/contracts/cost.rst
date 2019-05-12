@@ -59,6 +59,16 @@ We use the notation :math:`c\left(M\right)` for the cost of the term :fsharp:`M`
      - :math:`c\left(\color{black}{ M.F }\right)`
      - :math:`1 + c\left(\color{black}{M}\right)`
 
+Notice how the cost of both **function abstraction** and **applied let clause** is **0** -
+that's because function abstraction is in a **weak head normal form** - it's not evaluated further until
+it is applied on an argument, so as far as the execution environment is concerned it is **already a value**,
+so it won't be evaluated further;
+The cost of applied let clause is **0** as well, since an applied let expression if equivalent to a beta redex
+where the argument is itself a lambda (:math:`\textbf{let} \: f \: x = N \: \textbf{in} \: M` is equivalent to
+:math:`\left(\lambda f.M\right) \: \left(\lambda x.N\right)`), so it is considered the same;
+In both cases the cost of the body of the function is **internalized**, through the use of :fsharp:`inc`
+(which would be explained later).
+
 In practice the actual cost (relative to the cost model) is **not computed directly**,
 instead - the cost is decomposed into 2 components:
 

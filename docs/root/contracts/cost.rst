@@ -60,11 +60,13 @@ We use the notation :math:`c\left(M\right)` for the cost of the term :fsharp:`M`
      - :math:`1 + c\left(\color{black}{M}\right)`
 
 In practice the actual cost (relative to the cost model) is **not computed directly**,
-instead - the cost is divided into 2 components:
+instead - the cost is decomposed into 2 components:
 
   1. **Compositional Cost** - which is **declared** by the **developer** and
      **verified** by the **type system**
   2. **Syntactic Cost** - which is **computed** by the **elaborator**
+
+:math:`\textbf{total cost}=\textbf{compositional cost}+\textbf{syntactic cost}`
 
 In fact - given general recursion it is **impossible** to automatically compute the cost
 of any arbitrary term in the language.
@@ -105,6 +107,12 @@ additive monoid of the natural numbers, so whenever you compose (using Kleisli c
 2 costed functions :fsharp:`f : B -> cost C n` and :fsharp:`g : A -> cost B m`
 you get a function of type :fsharp:`A -> cost C (m + n)` where the cost is the sum of the costs
 of :fsharp:`f` and :fsharp:`g`.
+
+The **bind** operator (:fsharp:`>>=`) has the type signature:
+
+.. code-block:: fsharp
+
+    bind: cost a m -> (a -> cost b n) -> cost b (m+n)
 
 In practice - the :fsharp:`cost` monad in *ZF\** is implemented as **the identity monad**,
 where the index could be set arbitrarily, so as far as *ZF\** is concerned - **it is up to

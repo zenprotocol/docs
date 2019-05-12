@@ -6,6 +6,37 @@ Examples
 .. role:: fsharp(code)
     :language: fsharp
 
+.. role:: bash(code)
+    :language: bash
+
+Preliminary Notes
+-----------------
+
+To **verify** the following examples use:
+
+.. code-block:: none
+
+    zebra -v Filename.fst
+
+To **elaborate** and verify the elaborated result use:
+
+.. code-block:: none
+
+    zebra -e Filename.fst
+
+The elaborated file will appear withing the :bash:`output` subdirectory of your current directory.
+
+In order for most of the examples to work you need to add the following lines at the beginning of your code:
+
+.. code-block:: fsharp
+
+    open Zen.Cost
+
+    let main txSkeleton _ _ _ _ _ _ _ = Zen.ContractResult.ofTxSkel txSkeleton
+
+    let cf _ _ _ _ _ _ _ = ret #nat 4
+
+
 Simple Example
 --------------
 
@@ -27,8 +58,8 @@ That's because function application (:fsharp:`f x`) has a cost of 1, which is em
 
 However - trying to compile this function will result in a typing error - because you can only apply :fsharp:`inc` on a value of a :fsharp:`cost` type.
 
-To fix it we modify the function to use :fsharp:`ret` on the result, and we change the type signature to return a :fsharp:`cost` type
-(with a cost of 0 since that is the cost :fsharp:`ret` gives):
+To fix it we modify the function to use :fsharp:`ret` on the result, to lift it into the :fsharp:`cost` monad,
+and we change the type signature to return a :fsharp:`cost` type (with a cost of 0 since that is the cost :fsharp:`ret` gives):
 
 .. code-block:: fsharp
 
@@ -52,7 +83,7 @@ Now the compilation would **still fail** with a typing error:
 
 That's because while the declared cost is 0, the **inferred** cost (due to the addition of :fsharp:`inc 2`) is 2.
 
-To fix that we now have to declare the **correct** cost within the type, to account for the increment:
+To fix that we now have to declare the **correct** cost within the type, to account for the increment, so :fsharp:`cost b 0` becomes :fsharp:`cost b 2`:
 
 .. code-block:: fsharp
 
@@ -65,7 +96,8 @@ Now that the syntactic cost is accounted for the program will compile.
 Aggregated Syntactic Cost
 -------------------------
 
-The following function takes a function :fsharp:`f` and an argument :fsharp:`x` and applies :fsharp:`f` on :fsharp:`x` and then on the result:
+The following function takes a function :fsharp:`f` and an argument :fsharp:`x` and applies :fsharp:`f` on :fsharp:`x`
+and then applies it again on the result:
 
 .. code-block:: fsharp
 
@@ -96,7 +128,7 @@ which will be elaborated as:
     val applyTwice: #a: Type -> (a -> a) -> a -> cost a 3
     let applyTwice #_ f x = inc 3 (ret (f (f x)))
 
-Notice that this time we've participated the increased elaborated cost in advance, so the original code won't compile (since :fsharp:`ret` gives
+Notice that this time we've predicted the increased elaborated cost in advance, so the original code won't compile (since :fsharp:`ret` gives
 a cost of 0) while the elaborated code will (since it will add :fsharp:`inc 3` to account for the costs of all the function applications).
 
 In practice - **you won't be able to modify the elaborated code**, since the elaboration is done automatically when activating a contract,
@@ -147,6 +179,99 @@ Now to account for the additional cost of **7** we change the declared cost of t
     let onceOrTwice #_ b f x = inc 7 (if b then inc 1 (applyOnce f x) else applyTwice f x)
 
 The elaborated code will now compile.
+
+
+Composition
+-----------
+
+Let's define 2 simple functions on the natural numbers - a function which takes a number and doubles it and a function which adds 7 to a number:
+
+.. code-block:: fsharp
+
+    val double : nat -> nat
+    let double x = 2 * x
+
+    val add7 : nat -> nat
+    let add7 x = x + 7
+
+We'll also define a function :fsharp:`foo` which would first double a number and then add 7 to the result, by composing the above functions:
+
+.. code-block:: fsharp
+
+    val foo : nat -> nat
+    let foo x = add7 (double x)
+
+The code will compile just fine, but not the elaboration.
+
+To pass the elaboration we need to make sure all the functions are costed by lifting the results into the :fsharp:`cost` monad:
+
+.. code-block:: fsharp
+
+    val double : nat -> cost nat 0
+    let double x = ret (2 * x)
+
+    val add7 : nat -> cost nat 0
+    let add7 x = ret (x + 7)
+
+What about :fsharp:`foo`? trying to simply compose :fsharp:`add7` and :fsharp:`double` and lifting the result will now fail to typecheck:
+
+.. code-block:: fsharp
+
+    val foo : nat -> cost nat 0
+    let foo x = ret (add7 (double x))
+
+That's because we've changed the return type of the functions, so to compose them we have to use the **bind operator** (:fsharp:`>>=`):
+
+.. code-block:: fsharp
+
+    val foo : nat -> cost nat 0
+    let foo x = ret x >>= double >>= add7
+
+Now elaboration would still fail, so we have to account for the syntactic cost as well - let's look at the elaborated code:
+
+.. code-block:: fsharp
+
+    val double: nat -> cost nat 0
+    let double x = (inc 3 (ret (2 * x)))
+
+    val add7: nat -> cost nat 0
+    let add7 x = (inc 3 (ret (x + 7)))
+
+    val foo: nat -> cost nat 0
+    let foo x = (inc 5 (ret x >>= double >>= add7))
+
+By looking at the :fsharp:`inc`s we know that the cost of both :fsharp:`double` and :fsharp:`add7` is 3, so we modify their types
+in the original code:
+
+.. code-block:: fsharp
+
+    val double : nat -> cost nat 3
+    let double x = ret (2 * x)
+
+    val add7 : nat -> cost nat 3
+    let add7 x = ret (x + 7)
+
+What is the cost of :fsharp:`foo`? trying to simply give it a cost of 5 will **fail**:
+
+.. code-block:: fsharp
+
+    val foo: nat -> cost nat 5
+    let foo x = (inc 5 (ret x >>= double >>= add7))
+
+That's because we now have to take the costs of :fsharp:`double` and :fsharp:`add7` into account as well.
+
+Recall that the type of the bind operator is: :fsharp:`cost a m -> (a -> cost b n) -> cost b (m+n)`,
+so it sums up the costs, which means that's exactly what we have to do.
+
+Since the cost of :fsharp:`double` is **3**, the cost of :fsharp:`add7` is **3**, and the syntactic cost of :fsharp:`foo` is **5**,
+adding them all together gives us a cost of **11**:
+
+.. code-block:: fsharp
+
+    val foo: nat -> cost nat 11
+    let foo x = (inc 5 (ret x >>= double >>= add7))
+
+Now the elaborated code will compile.
 
 Recursion
 ---------

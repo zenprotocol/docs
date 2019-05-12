@@ -12,4 +12,5 @@ Contents:
 * [ZF*](root/zfstar.html)
 * [Contracts](root/contracts.html)
     * [Cost Analysis](root/contracts/cost.html)
+        * [Cost Analysis Examples](root/contracts/examples.html)
     * [Contract Structure](root/contracts/contract-structure.html)

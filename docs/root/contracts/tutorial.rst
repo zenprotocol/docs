@@ -470,7 +470,7 @@ So we should add the :fsharp:`cf` function to the end of the file, like this:
 
     let cf txSkel context command sender messageBody wallet state =
 
-To start - let's give assign it to :fsharp:`0` and then lift it into the cost monad with :fsharp:`Zen.Cost.ret`:
+To start - let's give it to the value of :fsharp:`0` and then lift it into the cost monad with :fsharp:`Zen.Cost.ret`:
 
 .. code-block:: fsharp
 

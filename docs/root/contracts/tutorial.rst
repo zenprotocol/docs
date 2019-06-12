@@ -25,13 +25,13 @@ First - the issuer executes the contract, giving it the following data:
    :header-rows: 0
 
    * - 1. **name**
-     - :fsharp:`: Zen.Types.lock`
+     - :fsharp:`: string`
      - The name of the issued token
    * - 2. **amount**
      - :fsharp:`: uint64`
      - The issed amount of the token
    * - 3. **returnAddress**
-     - :fsharp:`: string`
+     - :fsharp:`: Zen.Types.lock`
      - The recipient of the token
 
 Then - the contract mints the specified amount of the token using the given name as a subidentifier,
@@ -93,20 +93,21 @@ Let's write the :fsharp:`main` function, it should always have the following typ
 where :fsharp:`n` is the cost of the function and equal to :fsharp:`cf txSkel context command sender messageBody wallet state`
 (notice that :fsharp:`cf` doesn't take the :fsharp:`contractId` as an argument, since the cost shouldn't depend on it).
 
-In practice we usually don't actually have to specify the times of the parameters, as they would be inferred by the compiler.
+In practice we usually don't actually have to specify the types of the parameters, as they would be inferred by the compiler.
 
 It should look like this:
 
 .. code-block:: fsharp
 
     let main txSkel context contractId command sender messageBody wallet state =
+        ...
 
-We haven't supplied the body of the function yet, which should go below that line.
+We haven't supplied the body of the function yet, which should go below that line (instead of the ellipsis).
 
 The first thing we need to do is to parse the data - to extract the name, amount, and return address out of it.
 
 The data should be sent to the contract through the :fsharp:`messageBody` parameter, in the form of a dictionary,
-which will contain the specified data as *(key,value)* pairs, where each key corresponds to one of the specified fields
+which will contain the specified data as *(key, value)* pairs, where each key corresponds to one of the specified fields
 (**"name"**, **"amount"**, and **"returnAddress"**).
 
 Since we assume :fsharp:`messageBody` is a dictionary, we need to try to extract a dictionary out of it -
@@ -165,7 +166,9 @@ Let's name the result as :fsharp:`dict`, using a :fsharp:`let` expression, so th
 
         let dict = messageBody >!= tryDict in
 
-Now :fsharp:`dict` will either contain a :fsharp:`Some d` (where :fsharp:`d` is a dictionary) or :fsharp:`None`.
+        ...
+
+:fsharp:`dict` will either contain a :fsharp:`Some d` (where :fsharp:`d` is a dictionary) or :fsharp:`None`.
 
 Now that we have the dictionary, let's extract the required fields out of it, using the :fsharp:`tryFind` function (from :fsharp:`Zen.Dictionary`).
 
@@ -233,6 +236,8 @@ Now the whole :fsharp:`main` function should look like this:
             >?= tryLock
         in
 
+        ...
+
 To extract the **"amount"** and **"name"** keys we'll do something similar
 (using :fsharp:`tryU64` and :fsharp:`tryString`, respectively, instead of :fsharp:`tryLock`):
 
@@ -259,6 +264,8 @@ To extract the **"amount"** and **"name"** keys we'll do something similar
             >?= Zen.Dictionary.tryFind "name"
             >?= tryString
         in
+
+        ...
 
 Now that we have all of the data, we can use it assuming everything was provided by the issuer.
 
@@ -303,7 +310,12 @@ If the name is longer than 32 characters - we throw an error:
     | _ ->
         Zen.ResultT.autoFailw "parameters are missing"
 
-If the name is short enough to fit as an asset subidentifier - we can define a token with the give name as a subidentifier and the
+In Zen Protocol assets are defined by 2 parts:
+
+    1. Main Identifier - The contract ID of the contract which have minted the asset.
+    2. Subidentifier - The unique ID of the asset, given by 32 bytes.
+
+If the name is short enough to fit as an asset subidentifier - we can define a token with the given name as the subidentifier and the
 contract ID of this contract as the main identifier (using the :fsharp:`fromSubtypeString` function from :fsharp:`Zen.Asset`):
 
 .. code-block:: fsharp
@@ -320,7 +332,7 @@ contract ID of this contract as the main identifier (using the :fsharp:`fromSubt
     | _ ->
         Zen.ResultT.autoFailw "parameters are missing"
 
-(Note that we're use :fsharp:`begin` and :fsharp:`end` here instead of parentheses, to make the code cleaner)
+(Notice that we're using :fsharp:`begin` and :fsharp:`end` here instead of parentheses, to make the code cleaner)
 
 Now that we have defined the named token - we **mint** the specified amount of it,
 and then **lock** the minted tokens to the specified return address -

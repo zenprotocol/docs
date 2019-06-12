@@ -90,7 +90,8 @@ Let's write the :fsharp:`main` function, it should always have the following typ
         ( state       : option Zen.Types.data )
         : Zen.Types.contractResult `Zen.Cost.t` n
 
-where :fsharp:`n` is the cost of the function and equal to :fsharp:`cf txSkel context contractId command sender messageBody wallet state`.
+where :fsharp:`n` is the cost of the function and equal to :fsharp:`cf txSkel context command sender messageBody wallet state`
+(notice that :fsharp:`cf` doesn't take the :fsharp:`contractId` as an argument, since the cost shouldn't depend on it).
 
 In practice we usually don't actually have to specify the times of the parameters, as they would be inferred by the compiler.
 
@@ -215,11 +216,14 @@ Let's give a name to the extracted lock, using a :fsharp:`let!` expression.
         >?= tryLock
     in
 
+The :fsharp:`let!` usage strips the cost out of the declared variable (using the cost monad), so it would be easier to work with -
+the type of :fsharp:`returnAddress` will be :fsharp:`option lock`, instead of ``option lock `cost` m``.
+
 Now the whole :fsharp:`main` function should look like this:
 
 .. code-block:: fsharp
 
-    let main txSkeleton context contractId command sender messageBody wallet state =
+    let main txSkel context contractId command sender messageBody wallet state =
 
         let dict = messageBody >!= tryDict in
 
@@ -230,11 +234,11 @@ Now the whole :fsharp:`main` function should look like this:
         in
 
 To extract the **"amount"** and **"name"** keys we'll do something similar
-(using the :fsharp:`tryU64` and :fsharp:`tryString`, respectively, instead of :fsharp:`tryLock`):
+(using :fsharp:`tryU64` and :fsharp:`tryString`, respectively, instead of :fsharp:`tryLock`):
 
 .. code-block:: fsharp
 
-    let main txSkeleton context contractId command sender messageBody wallet state =
+    let main txSkel context contractId command sender messageBody wallet state =
 
         let dict = messageBody >!= tryDict in
 
@@ -255,3 +259,311 @@ To extract the **"amount"** and **"name"** keys we'll do something similar
             >?= Zen.Dictionary.tryFind "name"
             >?= tryString
         in
+
+Now that we have all of the data, we can use it assuming everything was provided by the issuer.
+
+To consider both the case where the issuer has provided everything and the case where there is missing information,
+we pattern match on the data, like this:
+
+.. code-block:: fsharp
+
+    match returnAddress,amount,name with
+    | Some returnAddress, Some amount, Some name ->
+        ...
+    | _ ->
+        ...
+
+The 1st case will be executed when all the data was provided, and the 2nd case will be executed if any of the required parameters wasn't provided.
+
+Let's throw an error when some of the parameters are missing.
+
+.. code-block:: fsharp
+
+    match returnAddress,amount,name with
+    | Some returnAddress, Some amount, Some name ->
+        ...
+    | _ ->
+        Zen.ResultT.autoFailw "parameters are missing"
+
+The function :fsharp:`autoFailw` in :fsharp:`Zen.ResultT` throws an error (within a :fsharp:`ResultT`) and infers the cost automatically.
+
+If all the parameters were provided - we need to check that the provided name of the token is at most 32 characters, because that's the
+maximum size an asset subidentifier can have.
+
+If the name is longer than 32 characters - we throw an error:
+
+.. code-block:: fsharp
+
+    match returnAddress,amount,name with
+    | Some returnAddress, Some amount, Some name ->
+        if FStar.String.length name <= 32 then
+            ...
+        else
+            Zen.ResultT.autoFailw "name is too long"
+    | _ ->
+        Zen.ResultT.autoFailw "parameters are missing"
+
+If the name is short enough to fit as an asset subidentifier - we can define a token with the give name as a subidentifier and the
+contract ID of this contract as the main identifier (using the :fsharp:`fromSubtypeString` function from :fsharp:`Zen.Asset`):
+
+.. code-block:: fsharp
+
+    match returnAddress,amount,name with
+    | Some returnAddress, Some amount, Some name ->
+        if FStar.String.length name <= 32 then
+            begin
+              let! token = Zen.Asset.fromSubtypeString contractId name in
+              ...
+            end
+        else
+            Zen.ResultT.autoFailw "name is too long"
+    | _ ->
+        Zen.ResultT.autoFailw "parameters are missing"
+
+(Note that we're use :fsharp:`begin` and :fsharp:`end` here instead of parentheses, to make the code cleaner)
+
+Now that we have defined the named token - we **mint** the specified amount of it,
+and then **lock** the minted tokens to the specified return address -
+this is done by modifying the supplied transaction (:fsharp:`txSkel`) with :fsharp:`mint`,
+and then modifying the result with :fsharp:`lockToAddress` (both are defined in :fsharp:`Zen.TxSkeleton`):
+
+.. code-block:: fsharp
+
+    match returnAddress,amount,name with
+    | Some returnAddress, Some amount, Some name ->
+        if FStar.String.length name <= 32 then
+            begin
+              let! token = Zen.Asset.fromSubtypeString contractId name in
+
+              let! txSkel =
+                Zen.TxSkeleton.mint amount token txSkel
+                >>= Zen.TxSkeleton.lockToAddress token amount returnAddress in
+
+              ...
+            end
+        else
+            Zen.ResultT.autoFailw "name is too long"
+    | _ ->
+        Zen.ResultT.autoFailw "parameters are missing"
+
+Notice the syntax we're using here - both :fsharp:`mint` and :fsharp:`lockToAddress` return a costed :fsharp:`txSkeleton`,
+so to chain them we're using the :fsharp:`(>>=)` operator (bind) of the cost monad, and then we name the result using a
+:fsharp:`let!` so we can use it as a "pure" :fsharp:`txSkeleton` (instead of a **costed** :fsharp:`txSkeleton`).
+
+Now that we've prepared the transaction - all that is left is to return it (using :fsharp:`ofTxSkel` from :fsharp:`Zen.ContractResult`),
+and the contract is done:
+
+.. code-block:: fsharp
+
+    match returnAddress,amount,name with
+    | Some returnAddress, Some amount, Some name ->
+        if FStar.String.length name <= 32 then
+            begin
+              let! token = Zen.Asset.fromSubtypeString contractId name in
+
+              let! txSkel =
+                Zen.TxSkeleton.mint amount token txSkel
+                >>= Zen.TxSkeleton.lockToAddress token amount returnAddress in
+
+              Zen.ContractResult.ofTxSkel txSkel
+            end
+        else
+            Zen.ResultT.autoFailw "name is too long"
+    | _ ->
+        Zen.ResultT.autoFailw "parameters are missing"
+
+The whole file should now look like this:
+
+.. code-block:: fsharp
+
+    module NamedToken
+
+    open Zen.Base
+    open Zen.Cost
+    open Zen.Data
+
+    let main txSkel context contractId command sender messageBody wallet state =
+
+        let dict = messageBody >!= tryDict in
+
+        let! returnAddress =
+            dict
+            >?= Zen.Dictionary.tryFind "returnAddress"
+            >?= tryLock
+        in
+
+        let! amount =
+            dict
+            >?= Zen.Dictionary.tryFind "amount"
+            >?= tryU64
+        in
+
+        let! name =
+            dict
+            >?= Zen.Dictionary.tryFind "name"
+            >?= tryString
+        in
+
+        match returnAddress,amount,name with
+        | Some returnAddress, Some amount, Some name ->
+            if FStar.String.length name <= 32 then
+                begin
+                  let! token = Zen.Asset.fromSubtypeString contractId name in
+
+                  let! txSkel =
+                    Zen.TxSkeleton.mint amount token txSkel
+                    >>= Zen.TxSkeleton.lockToAddress token amount returnAddress in
+
+                  Zen.ContractResult.ofTxSkel txSkel
+                end
+            else
+                Zen.ResultT.autoFailw "name is too long"
+        | _ ->
+            Zen.ResultT.autoFailw "parameters are missing"
+
+Now we can verify the validity of this file with:
+
+.. code-block:: bash
+
+    zebra -v NamedToken.fst
+
+It should verify successfully, returning:
+
+.. code-block:: bash
+
+    > zebra -v NamedToken.fst
+    SDK:	Verified
+
+But hold on - **we aren't done yet!**
+
+We have finished with the :fsharp:`main` function, but we still need to define the :fsharp:`cf` function.
+
+The type signature of :fsharp:`cf` is:
+
+.. code-block:: fsharp
+
+    cf
+        ( txSkel      : Zen.Types.txSkeleton  )
+        ( context     : Zen.Types.context     )
+        ( command     : string                )
+        ( sender      : Zen.Types.sender      )
+        ( messageBody : option Zen.Types.data )
+        ( wallet      : Zen.Types.wallet      )
+        ( state       : option Zen.Types.data )
+        : nat `cost` n
+
+So we should add the :fsharp:`cf` function to the end of the file, like this:
+
+.. code-block:: fsharp
+
+    let cf txSkel context command sender messageBody wallet state =
+
+To start - let's give assign it to :fsharp:`0` and then lift it into the cost monad with :fsharp:`Zen.Cost.ret`:
+
+.. code-block:: fsharp
+
+    let cf txSkel context command sender messageBody wallet state =
+        0
+        |> Zen.Cost.ret
+
+Let's try to **elaborate** the contract, to make sure the cost is correct.
+
+.. code-block:: bash
+
+    zebra -e NamedToken.fst
+
+You should get the following error:
+
+.. code-block:: bash
+
+    (Error 19) Subtyping check failed; expected type
+    _: Zen.Types.Realized.txSkeleton ->
+    context: Zen.Types.Main.context ->
+    command: Prims.string ->
+    _: Zen.Types.Main.sender ->
+    messageBody: FStar.Pervasives.Native.option Zen.Types.Data.data ->
+    _: Zen.Types.Realized.wallet ->
+    state: FStar.Pervasives.Native.option Zen.Types.Data.data ->
+    Prims.Tot (Zen.Cost.Realized.cost Prims.nat (0 + 2)); got type
+    txSkel: Zen.Types.Realized.txSkeleton ->
+    context: Zen.Types.Main.context ->
+    command: Prims.string ->
+    sender: Zen.Types.Main.sender ->
+    messageBody: FStar.Pervasives.Native.option Zen.Types.Data.data ->
+    wallet: Zen.Types.Realized.wallet ->
+    state: FStar.Pervasives.Native.option Zen.Types.Data.data ->
+    Prims.Tot (Zen.Cost.Realized.cost Prims.int (0 + 2))
+
+Notice how it infers that :fsharp:`cf` returns an :fsharp:`int`, while it should return a :fsharp:`nat`.
+
+To solve it we need to **cast** the value of :fsharp:`cf` into a :fsharp:`nat`, using the :fsharp:`cast` function:
+
+.. code-block:: fsharp
+
+    let cf txSkel context command sender messageBody wallet state =
+        0
+        |> cast nat
+        |> Zen.Cost.ret
+
+Let's elaborate it again, now we get the following error:
+
+.. code-block:: bash
+
+    (Error 19) Subtyping check failed; expected type
+    txSkel: Zen.Types.Realized.txSkeleton ->
+    context: Zen.Types.Main.context ->
+    _: Zen.Types.Extracted.contractId ->
+    command: Prims.string ->
+    sender: Zen.Types.Main.sender ->
+    messageBody: FStar.Pervasives.Native.option Zen.Types.Data.data ->
+    wallet: Zen.Types.Realized.wallet ->
+    state: FStar.Pervasives.Native.option Zen.Types.Data.data ->
+    Prims.Tot
+    (Zen.Cost.Realized.cost Zen.Types.Main.contractResult
+      (Zen.Cost.Realized.force (CostFunc?.f (Zen.Types.Main.CostFunc NamedToken.cf)
+              txSkel
+              context
+              command
+              sender
+              messageBody
+              wallet
+              state))); got type
+    txSkel: Zen.Types.Realized.txSkeleton ->
+    context: Zen.Types.Main.context ->
+    contractId: Zen.Types.Extracted.contractId ->
+    command: Prims.string ->
+    sender: Zen.Types.Main.sender ->
+    messageBody: FStar.Pervasives.Native.option Zen.Types.Data.data ->
+    wallet: Zen.Types.Realized.wallet ->
+    state: FStar.Pervasives.Native.option Zen.Types.Data.data ->
+    Prims.Tot
+    (Zen.Cost.Realized.cost Zen.Types.Main.contractResult
+      (4 + 64 + 2 + (4 + 64 + 2 + (4 + 64 + 2 + (64 + (64 + 64 + 3)))) + 54))
+
+Look at the number at the bottom - this is the cost that was **inferred** by the compiler,
+so let's try to paste it into the function:
+
+.. code-block:: fsharp
+
+    let cf txSkel context command sender messageBody wallet state =
+        (4 + 64 + 2 + (4 + 64 + 2 + (4 + 64 + 2 + (64 + (64 + 64 + 3)))) + 54)
+        |> cast nat
+        |> Zen.Cost.ret
+
+Let's try to elaborate again:
+
+.. code-block:: bash
+
+    > zebra -e NamedToken.fst
+    SDK:	Elaborating NamedToken.fst ...
+    SDK:	Wrote elaborated source to NamedToken.fst
+    SDK:	Verified
+
+**Congratulations!**
+
+You have written, elaborated, and verified your very first contract.
+
+This time we were lucky - we didn't have to explicitly type our terms and the code was simple enough for the compiler to infer its cost.
+
+With more complex contracts it might not be so easy - in many cases you'll have to explicitly type your terms to convince the compiler
+that the cost of the contract is what you claim it is.

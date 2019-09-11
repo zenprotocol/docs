@@ -1,4 +1,4 @@
-# Installers
+# Executable Installers
 
 Download and installation for users without development experience.
 
@@ -31,4 +31,4 @@ Please make sure to install all of the necessary dependencies below before tryin
 --------------------------------------------------------------------------------
 
 ### Link to Download Installers
-[​https://github.com/zenprotocol/zenwallet/releases​](​https://github.com/zenprotocol/zenwallet/releases​)
+<​https://github.com/zenprotocol/zenwallet/releases​>
